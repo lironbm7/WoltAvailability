@@ -1,25 +1,31 @@
-from selenium import webdriver
-from win10toast import ToastNotifier
 import time
+from plyer import notification
+import requests
 
-# MODIFY
-driver = webdriver.Edge()  # Modify to Edge / Chrome / FireFox, etc
-# target refers to the restaurant we will be running the program on
-target = "https://wolt.com/en/isr/tel-aviv/restaurant/burgus-burger-bar-ramat-hachayal"
-# endof MODIFY
+def notify_on_crash():
+    notification.notify(
+        title="Program crashed",
+        message="The program has crashed. Please check the logs for more information.",
+        timeout=60
+    )
 
-notifier = ToastNotifier()
-driver.get(target)
-time.sleep(2)
-restaurant = driver.title
-
+website = input("Enter the Wolt web address of the restaurant's page")
+i = 0
 while True:
-    time.sleep(5)
-    if 'Scheduled orders only' in driver.page_source:
-        print('Unavailable, trying again in 5 seconds..')
-        driver.get(target)
-    else:
-        print('Available!')
-        driver.quit()
-        notifier.show_toast("Open for deliveries", restaurant, duration=60)
+    try:
+        response = requests.get(website)
+        if 'Scheduled orders only' not in response.text:
+            notification.notify(
+                title="Open for deliveries",
+                message=website,
+                timeout=60
+            )
+            break
+        else:
+            print(f"Unavailable, trying again in 5 seconds.. ({i})")
+            i += 1
+            time.sleep(5)
+    except Exception as e:
+        print(f"Error: {e}")
+        notify_on_crash()
         break
